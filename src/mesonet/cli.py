@@ -52,10 +52,24 @@ VARIABLES: list[tuple[str, str]] = [
     ("Barometric Pressure", "Barometric Pressure (inHg)"),
 ]
 
-# Fallback station list if a live lookup isn't possible (e.g. offline).
-STATIONS_FALLBACK = [
-    "ACRE", "ASEL", "CCCS", "DFINC", "DPAC", "DUNLAP", "FPAC", "MARTELL",
-    "NEPAC", "PPAC", "SEPAC", "SHFPRS", "SIPAC", "SWPAC", "TPAC",
+# Known stations (ID -> name). Shown in --help so it stays fast and offline;
+# the server's live list is slow to fetch. Refresh with: mesonet ACRE "Air Temp".
+STATIONS: list[tuple[str, str]] = [
+    ("ACRE", "Agronomy Center for Research and Education"),
+    ("ASEL", "Asel Family Farm"),
+    ("CCCS", "Crawford County Community Schools"),
+    ("DFINC", "Dutchman Family Farms Inc"),
+    ("DPAC", "Davis Purdue Agricultural Center"),
+    ("DUNLAP", "Dunlap Family Farm"),
+    ("FPAC", "Feldun Purdue Agricultural Center"),
+    ("MARTELL", "Martell Forest"),
+    ("NEPAC", "Northeast Purdue Agricultural Center"),
+    ("PPAC", "Pinney Purdue Agricultural Center"),
+    ("SEPAC", "Southeast Purdue Agricultural Center"),
+    ("SHFPRS", "Shawnee Hills Farm Permaculture Research Station"),
+    ("SIPAC", "Southern Purdue Agricultural Center"),
+    ("SWPAC", "Southwest Purdue Agricultural Center"),
+    ("TPAC", "Throckmorton Purdue Agricultural Center"),
 ]
 
 
@@ -138,19 +152,6 @@ def daily_precip(station: str) -> list[tuple[datetime.date, float]]:
     return out
 
 
-def live_stations() -> list[tuple[str, str]]:
-    """Return station IDs + names currently reporting; empty list on failure."""
-    try:
-        rows = fetch_csv("MapView", {"Map Variable": "Air Temp"})
-        seen: dict[str, str] = {}
-        for r in rows[1:]:
-            if len(r) >= 10 and r[2].strip():
-                seen.setdefault(r[2].strip(), r[9])
-        return sorted(seen.items())
-    except Exception:
-        return []
-
-
 def print_help() -> None:
     """Print rich help text, including a live station lookup when possible."""
     print(
@@ -166,13 +167,9 @@ def print_help() -> None:
     )
     for k, lab in VARIABLES:
         print(f"  {k:<27} {lab}")
-    stns = live_stations()
-    print("\nSTATIONS" + ("" if stns else "  (fallback list — live lookup unavailable)"))
-    if stns:
-        for sid, name in stns:
-            print(f"  {sid:<10} {name}")
-    else:
-        print("  " + "  ".join(STATIONS_FALLBACK))
+    print("\nSTATIONS")
+    for sid, name in STATIONS:
+        print(f"  {sid:<10} {name}")
     print(
         "\nEXAMPLES\n"
         "  mesonet                     # MARTELL precip summary\n"
