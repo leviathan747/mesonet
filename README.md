@@ -17,7 +17,7 @@ Server dashboard. We read its underlying data as CSV:
   totals, summed over the most recent 7 and 30 calendar days (data runs through
   yesterday).
 
-[hub]: https://tableau.it.purdue.edu/t/public/views/IndianaMesonetDashboard
+[hub]: https://ag.purdue.edu/indiana-state-climate/purdue-mesonet/purdue-mesonet-data-hub/
 
 ## Installation
 
