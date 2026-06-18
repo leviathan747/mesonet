@@ -18,7 +18,11 @@ import argparse
 import csv
 import datetime
 import io
+import itertools
 import json
+import sys
+import threading
+import time
 import urllib.parse
 import urllib.request
 
@@ -55,12 +59,52 @@ STATIONS_FALLBACK = [
 ]
 
 
+class Spinner:
+    """A tiny stderr spinner shown while waiting on the server.
+
+    Runs in a background thread so it animates while the main thread blocks on
+    the network. Writes only to stderr, and only when stderr is a TTY, so it
+    never interferes with stdout (JSON, --raw values, piping).
+    """
+
+    FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+    def __init__(self, message: str = "Contacting Purdue Mesonet…"):
+        self.message = message
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._enabled = sys.stderr.isatty()
+
+    def _spin(self) -> None:
+        for frame in itertools.cycle(self.FRAMES):
+            if self._stop.is_set():
+                break
+            sys.stderr.write(f"\r{frame} {self.message}")
+            sys.stderr.flush()
+            time.sleep(0.08)
+
+    def __enter__(self) -> Spinner:
+        if self._enabled:
+            self._thread = threading.Thread(target=self._spin, daemon=True)
+            self._thread.start()
+        return self
+
+    def __exit__(self, *exc) -> None:
+        if self._enabled:
+            self._stop.set()
+            if self._thread is not None:
+                self._thread.join()
+            # Erase the spinner line so it leaves no trace.
+            sys.stderr.write("\r\033[K")
+            sys.stderr.flush()
+
+
 def fetch_csv(view: str, params: dict[str, str]) -> list[list[str]]:
     """Fetch a dashboard view as CSV and return it as a list of rows."""
     q = {":embed": "y", ":showVizHome": "no", **params}
     url = f"{BASE}/{view}.csv?{urllib.parse.urlencode(q)}"
     req = urllib.request.Request(url, headers={"User-Agent": f"mesonet/{__version__}"})
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with Spinner(), urllib.request.urlopen(req, timeout=30) as r:
         return list(csv.reader(io.StringIO(r.read().decode("utf-8-sig"))))
 
 
