@@ -27,12 +27,6 @@ Install directly from GitHub with pip:
 pip install git+https://github.com/leviathan747/mesonet.git
 ```
 
-To install a specific tagged release:
-
-```bash
-pip install git+https://github.com/leviathan747/mesonet.git@v2.0.0
-```
-
 This installs a `mesonet` command on your `PATH`. Requires Python 3.9+ and has
 no third-party dependencies.
 
